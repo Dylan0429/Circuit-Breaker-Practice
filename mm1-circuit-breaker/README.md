@@ -43,7 +43,3 @@ Default config: λ = 40 req/s, μ = 60 req/s → ρ ≈ 0.667, Wq ≈ 33ms
 | `minimumNumberOfCalls` | 10 | Need 10 samples before evaluating |
 | `waitDurationInOpenState` | 3s | Recovery time before probing again |
 | `permittedNumberOfCallsInHalfOpenState` | 3 | Test calls before re-closing |
-
-## CI
-
-GitHub Actions builds and runs the simulation on every push. See `.github/workflows/build.yml`.

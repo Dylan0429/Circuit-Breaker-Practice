@@ -44,12 +44,13 @@ public class MM1CircuitBreakerExample {
         // ── 1. Configure the Circuit Breaker ──────────────────────────────
         CircuitBreakerConfig config = CircuitBreakerConfig.custom()
             // Trip OPEN if >= 50% of calls in the window fail
-            .failureRateThreshold(50)
+            .failureRateThreshold(50) 
+            // Trip OPEN if >= 25% of calls in the window fail
+            //.failureRateThreshold(25)
             // Also trip OPEN if >= 80% of calls exceed slowCallDurationThreshold
-            // This maps directly to M/M/1: high rho -> long wait times -> slow calls
             .slowCallRateThreshold(80)
+            //.slowCallDurationThreshold(Duration.ofMillis(20))
             .slowCallDurationThreshold(Duration.ofMillis(200))
-            //.slowCallDurationThreshold(Duration.ofMillis(20)) //Now anything over 20ms counts as slow — much easier to breach at Wq=33ms
 
             // Count-based sliding window of 20 calls
             .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
@@ -61,7 +62,8 @@ public class MM1CircuitBreakerExample {
             .waitDurationInOpenState(Duration.ofSeconds(3))
             // Allow 3 test calls in HALF_OPEN before deciding to re-CLOSE or stay OPEN
             .permittedNumberOfCallsInHalfOpenState(3)
-            // Timeout errors should count as failures
+            // Record backend runtime failures as circuit failures too
+            //.recordExceptions(RuntimeException.class, TimeoutException.class, ExecutionException.class)
             .recordExceptions(TimeoutException.class, ExecutionException.class)
             // Business-level "no results" is NOT a circuit-level failure
             .ignoreExceptions(NoSuchElementException.class)
@@ -108,9 +110,9 @@ public class MM1CircuitBreakerExample {
                 // Exponential service time: Exp(mu) seconds
                 long serviceMs = (long) (exponential(MU) * 1000);
 
-                // Simulate overload: service times > 200ms count as slow calls,
-                // which push the CB toward tripping open
-                if (serviceMs > 200) {
+                // Simulate overload: service times > 20ms now fail fast.
+                // This makes tripping OPEN visible in a short demo run.
+                if (serviceMs > 20) {
                     throw new RuntimeException("Service timeout -- server overloaded");
                 }
 

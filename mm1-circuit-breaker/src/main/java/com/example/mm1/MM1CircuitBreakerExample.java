@@ -43,13 +43,11 @@ public class MM1CircuitBreakerExample {
 
         // ── 1. Configure the Circuit Breaker ──────────────────────────────
         CircuitBreakerConfig config = CircuitBreakerConfig.custom()
-            // Trip OPEN if >= 50% of calls in the window fail
-            .failureRateThreshold(50) 
-            // Trip OPEN if >= 25% of calls in the window fail
-            //.failureRateThreshold(25)
+            // Trip OPEN if >= n% of calls in the window fail
+            .failureRateThreshold(50)
+            
             // Also trip OPEN if >= 80% of calls exceed slowCallDurationThreshold
             .slowCallRateThreshold(80)
-            //.slowCallDurationThreshold(Duration.ofMillis(20))
             .slowCallDurationThreshold(Duration.ofMillis(200))
 
             // Count-based sliding window of 20 calls
@@ -63,8 +61,8 @@ public class MM1CircuitBreakerExample {
             // Allow 3 test calls in HALF_OPEN before deciding to re-CLOSE or stay OPEN
             .permittedNumberOfCallsInHalfOpenState(3)
             // Record backend runtime failures as circuit failures too
-            //.recordExceptions(RuntimeException.class, TimeoutException.class, ExecutionException.class)
-            .recordExceptions(TimeoutException.class, ExecutionException.class)
+            .recordExceptions(RuntimeException.class, TimeoutException.class, ExecutionException.class)
+            //.recordExceptions(TimeoutException.class, ExecutionException.class)
             // Business-level "no results" is NOT a circuit-level failure
             .ignoreExceptions(NoSuchElementException.class)
             .build();
@@ -110,17 +108,18 @@ public class MM1CircuitBreakerExample {
                 // Exponential service time: Exp(mu) seconds
                 long serviceMs = (long) (exponential(MU) * 1000);
 
-                // Simulate overload: service times > 20ms now fail fast.
-                // This makes tripping OPEN visible in a short demo run.
-                if (serviceMs > 20) {
-                    throw new RuntimeException("Service timeout -- server overloaded");
-                }
-
                 try {
                     Thread.sleep(serviceMs);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
+
+                // Simulate overload: service times > n ms fail after sleeping.
+                // This makes failures feel realistic (latency before failure).
+                if (serviceMs > 200) {
+                    throw new RuntimeException("Service timeout -- server overloaded");
+                }
+
                 return "OK after " + serviceMs + "ms";
             });
 

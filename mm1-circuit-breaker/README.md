@@ -43,3 +43,10 @@ Default config: λ = 40 req/s, μ = 60 req/s → ρ ≈ 0.667, Wq ≈ 33ms
 | `minimumNumberOfCalls` | 10 | Need 10 samples before evaluating |
 | `waitDurationInOpenState` | 3s | Recovery time before probing again |
 | `permittedNumberOfCallsInHalfOpenState` | 3 | Test calls before re-closing |
+
+## changes for different results
+
+| change | line  | result |
+|--------|-------|--------|
+|  none  | none  | closed failure rate 0% |
+|  200ms -> 20ms | 119 | open failure rate 50% |

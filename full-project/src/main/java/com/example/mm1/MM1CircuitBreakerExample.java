@@ -116,7 +116,7 @@ public class MM1CircuitBreakerExample {
 
                 // Simulate overload: service times > n ms fail after sleeping.
                 // This makes failures feel realistic (latency before failure).
-                if (serviceMs > 200) {
+                if (serviceMs > 20) {
                     throw new RuntimeException("Service timeout -- server overloaded");
                 }
 

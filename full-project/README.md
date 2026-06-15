@@ -15,7 +15,7 @@ mvn package
 
 ```bash
 # M/M/1 — Poisson arrivals, Exponential service (default)
-java -jar target/queue-simulations-1.0-SNAPSHOT.jar
+java -cp target/queue-simulations-1.0-SNAPSHOT.jar com.example.mm1.MM1CircuitBreakerExample
 
 # M/G/1 — Poisson arrivals, General service (change DIST in the file)
 java -cp target/queue-simulations-1.0-SNAPSHOT.jar com.example.mg1.MG1CircuitBreakerExample

@@ -18,6 +18,9 @@ import java.util.function.Supplier;
  *   - M: Poisson arrival process (memoryless inter-arrival times) — same as M/M/1
  *   - G: General service time distribution — this is what changes vs M/M/1
  *   - 1: Single server
+ * 
+ * In simpler terms, we have expected outcomes for a service, say a simple lookup would take 5-20ms (The G) but we don't controk
+ * when a request comes in, and so these calls can come any time but we know how much time each call will take.
  *
  * Because service times are no longer exponential, we can no longer use
  * the simple M/M/1 closed-form formulas. Instead we use the
@@ -47,7 +50,7 @@ public class MG1CircuitBreakerExample {
     // --- M/G/1 Parameters ---
     static final double LAMBDA    = 40.0;   // arrival rate (requests/second)
     static final double MU        = 60.0;   // mean service rate (requests/second)
-    static final double MEAN_S    = 1.0 / MU;  // mean service time in seconds (~16.7ms)
+    static final double MEAN_S    = 1.0 / MU;  // average time to serve one request
 
     // Lognormal parameters — tuned so mean service time = MEAN_S
     // For lognormal: mean = exp(mu_ln + sigma_ln^2/2), so mu_ln = ln(mean) - sigma_ln^2/2
@@ -56,24 +59,33 @@ public class MG1CircuitBreakerExample {
 
     static final Random rng = new Random();
 
-    // Which service distribution to use — change this to compare
+    // Which service distribution to use — CHANGE THIS TO COMPARE - Question could we possibly run these all together and compare them by using threads?
     enum ServiceDist { DETERMINISTIC, EXPONENTIAL, LOGNORMAL }
     static final ServiceDist DIST = ServiceDist.LOGNORMAL;
 
     public static void main(String[] args) throws InterruptedException {
 
-        // ── 1. Configure the Circuit Breaker (same structure as M/M/1) ────
+        // ── 1. Circuit Breaker Configuration (same structure as M/M/1) ────
         CircuitBreakerConfig config = CircuitBreakerConfig.custom()
+            // Trips OPEN if 50% or more of the last N calls failed outright
             .failureRateThreshold(50)
+            // ALSO trip OPEN if 80% or more of the last N calls were "slow"
             .slowCallRateThreshold(80)
+            // A call counts as "slow" if it takes longer than 200ms - important to a MG1 queue type
             .slowCallDurationThreshold(Duration.ofMillis(200))
+            // Evaluate the last 20 calls as a rolling window - we also use COUNT_BASED (regardless of time)
             .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
             .slidingWindowSize(20)
+            // Don't make any CB decisions until at least 10 calls have been recorded
             .minimumNumberOfCalls(10)
+            // Once OPEN, stay OPEN for 3 seconds before moving to HALF_OPEN
             .waitDurationInOpenState(Duration.ofSeconds(3))
+            // When in HALF_OPEN, allow exactly 3 probe requests through - if succeed go CLOSED if fail go OPEN again
             .permittedNumberOfCallsInHalfOpenState(3)
+
             .recordExceptions(RuntimeException.class, TimeoutException.class, ExecutionException.class)
             .ignoreExceptions(NoSuchElementException.class)
+            
             .build();
 
         CircuitBreakerRegistry registry = CircuitBreakerRegistry.of(config);
@@ -102,8 +114,7 @@ public class MG1CircuitBreakerExample {
         long simDuration = 15_000;
         long start = System.currentTimeMillis();
 
-        System.out.println("=== M/G/1 Simulation starting (lambda=" + LAMBDA +
-            ", mu=" + MU + ", dist=" + DIST + ") ===");
+        System.out.println("=== M/G/1 Simulation starting (lambda=" + LAMBDA + ", mu=" + MU + ", dist=" + DIST + ") ===");
         printTheory();
 
         while (System.currentTimeMillis() - start < simDuration) {
@@ -123,9 +134,10 @@ public class MG1CircuitBreakerExample {
                     Thread.currentThread().interrupt();
                 }
 
-                if (serviceMs > 200) {
-                    throw new RuntimeException("Service timeout -- server overloaded");
-                }
+                // removed since we already have a config in our circuit breaker that's wacthing the call's duration
+                // if (serviceMs > 200) {
+                //     throw new RuntimeException("Service timeout -- server overloaded");
+                // }
 
                 return "OK after " + serviceMs + "ms";
             });
@@ -197,6 +209,17 @@ public class MG1CircuitBreakerExample {
     static void printTheory() {
         double rho   = LAMBDA * MEAN_S;
 
+        System.out.println("\n--- M/G/1 P-K Theory (" + DIST + ", rho=" + String.format("%.3f", rho) + ") ---");
+
+        // Guard: P-K formula only valid when rho < 1
+        // this happens when our lambda > mu
+        if (rho >= 1.0) {
+            System.out.println("UNSTABLE (rho >= 1) — P-K formulas do not apply.");
+            System.out.println("Queue grows without bound -> timeouts -> circuit opens.");
+            System.out.println("---------------------------------------------------\n");
+            return;  // exit early, skip the formula calculations
+        }
+
         // Second moment E[S^2] depends on the distribution
         double eS2 = switch (DIST) {
             // Deterministic: E[S^2] = E[S]^2 (no variance)
@@ -208,12 +231,12 @@ public class MG1CircuitBreakerExample {
         };
 
         // P-K mean value formula
-        double lq  = (LAMBDA * LAMBDA * eS2) / (2.0 * (1 - rho));
+        double lq  = (LAMBDA * LAMBDA * eS2) / (2.0 * (1 - rho)); // will cause an issue if lambda > mu
         double wq  = lq / LAMBDA;
         double w   = wq + MEAN_S;
         double l   = LAMBDA * w;
 
-        System.out.println("\n--- M/G/1 P-K Theory (" + DIST + ", rho=" + String.format("%.3f", rho) + ") ---");
+        // System.out.println("\n--- M/G/1 P-K Theory (" + DIST + ", rho=" + String.format("%.3f", rho) + ") ---");
         System.out.printf("E[S]  (mean service time):  %.1f ms%n", MEAN_S * 1000);
         System.out.printf("E[S^2](2nd moment):         %.6f s^2%n", eS2);
         System.out.printf("Lq (mean queue length):     %.3f jobs%n", lq);

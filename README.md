@@ -11,6 +11,28 @@ M/M/1, M/G/1, and G/G/1 queueing theory simulations, each protected by a Resilie
 mvn package
 ```
 
+## Java 17 Setup (GitHub Codespaces)
+
+GitHub Codespaces defaults to Java 11. Since this project requires Java 17+,
+you need to upgrade before building. SDKMAN is pre-installed in Codespaces
+so this is straightforward.
+
+### Step 1 — Install Java 17
+```bash
+sdk install java 17.0.11-ms
+```
+
+### Step 2 — Switch to Java 17 for the current session
+```bash
+sdk use java 17.0.11-ms
+```
+
+### Step 3 — Verify
+```bash
+java -version
+# Should say: openjdk version "17.0.11" ...
+```
+
 ## Run each simulation
 
 ```bash

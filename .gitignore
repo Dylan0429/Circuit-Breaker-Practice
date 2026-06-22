@@ -13,3 +13,6 @@ target/
 
 .DS_Store
 Thumbs.db
+
+oldMG1Example.java
+outputMG1.txt

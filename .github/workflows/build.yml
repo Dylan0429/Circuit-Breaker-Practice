@@ -1,34 +1,29 @@
 name: Build & Run
-
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
-
       - name: Build fat JAR
         run: mvn -B package --no-transfer-progress
-
-      - name: Run simulation
-        run: java -jar target/mm1-circuit-breaker-1.0-SNAPSHOT.jar
-
+      - name: Run M/M/1 simulation
+        run: java -cp target/queue-simulations-1.0-SNAPSHOT.jar com.example.mm1.MM1CircuitBreakerExample
+      - name: Run M/G/1 simulation
+        run: java -cp target/queue-simulations-1.0-SNAPSHOT.jar com.example.mg1.MG1CircuitBreakerExample
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mm1-circuit-breaker-jar
-          path: target/mm1-circuit-breaker-1.0-SNAPSHOT.jar
+          name: queue-simulations-jar
+          path: target/queue-simulations-1.0-SNAPSHOT.jar

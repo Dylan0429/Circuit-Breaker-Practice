@@ -43,7 +43,11 @@ java -cp target/queue-simulations-1.0-SNAPSHOT.jar com.example.mm1.MM1CircuitBre
 java -cp target/queue-simulations-1.0-SNAPSHOT.jar com.example.mg1.MG1CircuitBreakerExample
 
 # G/G/1 — General arrivals, General service
-java -cp target/queue-simulations-1.0-SNAPSHOT.jar com.example.gg1.GG1CircuitBreakerExample
+#--------------------------------------------------------------------------------------------------------------------
+#IMPOTANT NOTE: GG1 code located in GG1TandemFull.class file outside codespace, run command also located in same file
+#--------------------------------------------------------------------------------------------------------------------
+# Tandem-M/M/1
+java -cp target/queue-simulations-1.0-SNAPSHOT.jar com.example.mm1tandem.TandemMM1CircuitBreakerExample
 ```
 
 ## Clear Maven everytime if alterations to code are made

@@ -103,7 +103,7 @@ public class MM1CircuitBreakerExample {
     // EXPONENTIAL: standard M/M/1, Burke's theorem holds exactly.
     // PARETO:      heavy-tailed service; Burke's theorem will VISIBLY break.
     enum ServiceDist { EXPONENTIAL, PARETO }
-    static final ServiceDist SERVICE_DIST = ServiceDist.EXPONENTIAL;
+    static final ServiceDist SERVICE_DIST = ServiceDist.PARETO;
 
     // --- Pareto parameters (used only if SERVICE_DIST == PARETO) ---
     // Tuned so E[X] = 1/MU, matching the exponential's mean service time,
@@ -139,7 +139,7 @@ public class MM1CircuitBreakerExample {
         CircuitBreakerConfig config = CircuitBreakerConfig.custom()
             .failureRateThreshold(50)
             .slowCallRateThreshold(50)                          
-            .slowCallDurationThreshold(Duration.ofMillis(20))   //-- now ~mean service time
+            .slowCallDurationThreshold(Duration.ofMillis(20))   //now ~mean service time
             .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
             .slidingWindowSize(20)
             .minimumNumberOfCalls(10)
@@ -339,9 +339,7 @@ public class MM1CircuitBreakerExample {
                 double varS = (PARETO_ALPHA * PARETO_C * PARETO_C)
                         / ((PARETO_ALPHA - 2) * Math.pow(PARETO_ALPHA - 1, 2));
                 varStr = String.format("%.6f s^2", varS);
-            } else {
-                varStr = "INFINITE (alpha <= 2)";
-            }
+            } 
             System.out.printf("Pareto c (min value):        %.5f s%n", PARETO_C);
             System.out.printf("Pareto alpha (shape):        %.2f%n", PARETO_ALPHA);
             System.out.printf("E[S] (mean service time):    %.1f ms  (matches Exp(mu)'s mean by design)%n", meanS * 1000);
